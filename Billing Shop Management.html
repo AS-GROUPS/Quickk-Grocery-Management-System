@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<link rel="icon" type="image/x-icon" href="C:\Users\Dell\Downloads\images (1).ico">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quickk | Smart Billing</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&display=swap');
+        body { font-family: 'Outfit', sans-serif; background: #f0f2f5; min-height: 100vh; display: flex; flex-direction: column; }
+        .custom-scroll::-webkit-scrollbar { width: 4px; }
+        .custom-scroll::-webkit-scrollbar-thumb { background: #e2e8f0; border-radius: 10px; }
+        main { flex: 1; }
+
+        /* QR Modal Styles */
+        #qr-modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); align-items: center; justify-content: center; }
+        #qr-modal-content { background: white; padding: 20px; border-radius: 15px; text-align: center; }
+
+        @media print {
+            body * { visibility: hidden; }
+            #print-receipt, #print-receipt * { visibility: visible; }
+            #print-receipt { position: absolute; left: 0; top: 0; width: 100%; padding: 10px; background: white; color: black; }
+            .no-print { display: none !important; }
+        }
+    </style>
+</head>
+<body class="p-2 md:p-6" onload="initSystem()">
+
+    <main class="max-w-6xl mx-auto no-print w-full">
+        <header class="flex flex-col md:flex-row justify-between items-center mb-6 bg-white p-6 rounded-2xl shadow-sm border-b-4 border-orange-500">
+            <div class="flex items-center gap-4">
+                <div class="bg-orange-100 p-3 rounded-xl text-orange-600 text-2xl">
+                  <img src="C:\Users\Dell\Downloads\images (1).ico" width="90" height="90">
+                </div>
+                <div>
+                    <h1 class="text-2xl font-bold text-gray-800">Quickk Grocery Store</h1><BR>
+                    <p class="text-gray-500 text-xs uppercase tracking-widest font-bold">Powered by UPI: <i class="fa-brands fa-google-pay fa-2xl"></i> | <i class="fa-brands fa-amazon-pay fa-2xl"></i></p>
+                </div>
+            </div>
+            <div class="text-center md:text-right mt-4 md:mt-0">
+                <p id="live-clock" class="font-bold text-gray-700 text-lg"></p>
+                <p id="bill-no-display" class="text-indigo-600 font-mono font-bold text-xl"></p>
+            </div>
+        </header>
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div class="lg:col-span-2 space-y-4">
+                <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
+                    <div class="grid grid-cols-1 md:grid-cols-12 gap-4">
+                        <div class="md:col-span-4">
+                            <label class="block text-xs font-bold text-gray-400 uppercase mb-1">Search Product / Barcode</label>
+                            <input type="text" id="item-search" oninput="filterProducts()" placeholder="Type to search..." class="w-full p-3 bg-orange-50 border border-orange-200 rounded-lg focus:ring-2 focus:ring-orange-400 outline-none font-bold">
+                        </div>
+                        <div class="md:col-span-4">
+                            <label class="block text-xs font-bold text-gray-400 uppercase mb-1">Select Item</label>
+                            <select id="product-dropdown" onchange="autoFillFromDropdown()" class="w-full p-3 bg-gray-50 border border-gray-200 rounded-lg focus:ring-2 focus:ring-orange-400 outline-none">
+                                <option value="">-- Choose Item --</option>
+                                <optgroup label="Chips & Snacks">
+                                    <option value="Lays Classic 50g" data-price="20">Lays Classic 50g</option>
+                                    <option value="Kurkure Masala Munch" data-price="20">Kurkure Masala Munch</option>
+                                    <option value="Uncle Chipps" data-price="20">Uncle Chipps</option>
+                                    <option value="Haldiram's Bhujia 200g" data-price="55">Haldiram's Bhujia 200g</option>
+                                    <option value="Bingo Mad Angles" data-price="20">Bingo Mad Angles</option>
+                                </optgroup>
+                                <optgroup label="Biscuits & Cookies">
+                                    <option value="Parle-G Gold" data-price="10">Parle-G Gold</option>
+                                    <option value="Britannia Good Day" data-price="30">Britannia Good Day</option>
+                                    <option value="Oreo Chocolate" data-price="40">Oreo Chocolate</option>
+                                    <option value="Sunfeast Dark Fantasy" data-price="50">Sunfeast Dark Fantasy</option>
+                                    <option value="Marie Gold 250g" data-price="35">Marie Gold 250g</option>
+                                    <option value="Hide & Seek" data-price="45">Hide & Seek</option>
+                                </optgroup>
+                                <optgroup label="Ice Creams & Frozen">
+                                    <option value="Amul Vanilla 1L" data-price="180">Amul Vanilla 1L</option>
+                                    <option value="Kwality Walls Choco" data-price="220">Kwality Walls Choco</option>
+                                    <option value="Amul Choco Bar" data-price="25">Amul Choco Bar</option>
+                                    <option value="Cornetto Chocolate" data-price="60">Cornetto Chocolate</option>
+                                    <option value="Vadilal Matka Kulfi" data-price="50">Vadilal Matka Kulfi</option>
+                                </optgroup>
+                            </select>
+                        </div>
+                        <div class="md:col-span-2">
+                            <label class="block text-xs font-bold text-gray-400 uppercase mb-1">Price</label>
+                            <input type="number" id="item-price-input" class="w-full p-3 bg-gray-50 border border-gray-200 rounded-lg outline-none" value="0">
+                        </div>
+                        <div class="md:col-span-2">
+                            <label class="block text-xs font-bold text-gray-400 uppercase mb-1">Qty</label>
+                            <input type="number" id="item-qty-input" class="w-full p-3 bg-gray-50 border border-gray-200 rounded-lg outline-none" value="1">
+                        </div>
+                    </div>
+                    <button onclick="addItem()" class="mt-4 w-full bg-orange-500 text-white py-3 rounded-xl font-bold hover:bg-orange-600 transition shadow-lg"><i class="fa-solid fa-plus mr-2"></i> Add Item</button>
+                </div>
+
+                <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+                    <table class="w-full text-left">
+                        <thead class="bg-gray-50 text-gray-400 text-xs uppercase font-bold">
+                            <tr><th class="p-4">Product</th><th class="p-4">Rate</th><th class="p-4">Qty</th><th class="p-4">Total</th><th class="p-4">Action</th></tr>
+                        </thead>
+                        <tbody id="cart-body" class="divide-y divide-gray-100"></tbody>
+                    </table>
+                </div>
+
+                <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="font-bold text-gray-800 flex items-center gap-2"><i class="fa-solid fa-clock-rotate-left text-orange-500"></i> Recent Bills History</h3>
+                        <button onclick="exportHistoryToCSV()" class="text-xs bg-green-100 text-green-600 px-3 py-1 rounded-lg font-bold hover:bg-green-200 transition"><i class="fa-solid fa-file-excel mr-1"></i> Export (CSV)</button>
+                    </div>
+                    <div id="bill-history" class="max-h-48 overflow-y-auto custom-scroll space-y-2 text-gray-400 text-sm italic">No previous bills yet.</div>
+                </div>
+            </div>
+
+            <div class="space-y-4">
+                <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
+                    <h3 class="font-bold text-gray-800 mb-6 flex items-center justify-between">Summary</h3>
+                    <div class="space-y-4 text-gray-500">
+                        <div class="flex justify-between"><span>Subtotal</span><span id="p-subtotal">₹0.00</span></div>
+                        <div class="flex justify-between"><span>GST (18%)</span><span id="p-gst">₹0.00</span></div>
+                        <div class="h-px bg-gray-100 my-4"></div>
+                        <div class="flex justify-between text-lg"><span class="font-bold text-gray-800">Grand Total</span><span id="p-grand" class="font-bold text-orange-600">₹0.00</span></div>
+                    </div>
+                    <button onclick="printBill()" class="w-full mt-6 bg-gray-800 text-white py-4 rounded-xl font-bold hover:bg-gray-900 transition flex items-center justify-center gap-2"><i class="fa-solid fa-receipt"></i> Save & Print Receipt</button>
+                    <button onclick="downloadTextBill()" class="w-full mt-2 border-2 border-gray-200 text-gray-600 py-3 rounded-xl font-bold hover:bg-gray-50 transition">Download .TXT Bill</button>
+                </div>
+
+                <div id="print-receipt" class="bg-white p-6 rounded-2xl border-2 border-dashed border-gray-200">
+                    <div class="text-center mb-4"><h2 class="text-xl font-bold">QUICKK STORE</h2><p class="text-[10px] text-gray-400" id="receipt-bill-no"></p></div>
+                    <div class="text-[10px] space-y-1 mb-4" id="receipt-items"></div>
+                    <div class="border-t border-gray-100 pt-2 space-y-1"><div class="flex justify-between text-[10px] font-bold"><span>Total:</span><span id="r-grand">₹0</span></div></div>
+                    <div class="mt-4 flex flex-col items-center">
+                        <div id="qrcode" class="cursor-pointer" onclick="openQRModal()"></div>
+                        <p class="text-[8px] text-gray-400 mt-1">Click QR to Enlarge</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <div id="qr-modal" onclick="closeQRModal()"><div id="qr-modal-content" onclick="event.stopPropagation()"><h2 class="font-bold mb-4">Scan to Pay</h2><div id="large-qrcode"></div><button class="mt-4 bg-orange-500 text-white px-4 py-2 rounded" onclick="closeQRModal()">Close</button></div></div>
+
+    <footer class="no-print bg-gray-800 text-white py-4 mt-8 border-t-4 border-orange-500"><div class="max-w-6xl mx-auto text-center px-4"><p class="text-sm font-medium">Grocery shop management system made by <span class="text-orange-400 font-bold uppercase">Ayush Saini</span> | All rights reserved 2026</p></div></footer>
+
+    <script>
+        let cart = []; let billNo = "";
+        const allOptions = Array.from(document.querySelectorAll('#product-dropdown option')).slice(1);
+
+        function initSystem() { updateClock(); setInterval(updateClock, 1000); generateBillNumber(); loadBillHistory(); document.getElementById('item-search').focus(); }
+        function updateClock() { const now = new Date(); document.getElementById('live-clock').innerText = now.toLocaleString('en-IN', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit' }); }
+        function generateBillNumber() { let count = localStorage.getItem('quickk_bill_count') || 0; count = parseInt(count) + 1; localStorage.setItem('quickk_bill_count', count); billNo = `BK-${count.toString().padStart(3, '0')}`; document.getElementById('bill-no-display').innerText = `BILL: #${billNo}`; document.getElementById('receipt-bill-no').innerText = `Bill No: ${billNo}`; }
+        function filterProducts() { const searchTerm = document.getElementById('item-search').value.toLowerCase(); const dropdown = document.getElementById('product-dropdown'); dropdown.innerHTML = '<option value="">-- Items Found --</option>'; const filtered = allOptions.filter(opt => opt.value.toLowerCase().includes(searchTerm)); filtered.forEach(opt => dropdown.add(opt.cloneNode(true))); if (filtered.length === 1) { dropdown.selectedIndex = 1; autoFillFromDropdown(); } }
+        function autoFillFromDropdown() { const dropdown = document.getElementById('product-dropdown'); const selected = dropdown.options[dropdown.selectedIndex]; if (selected && selected.value) { document.getElementById('item-price-input').value = selected.getAttribute('data-price'); } }
+        function addItem() { const name = document.getElementById('product-dropdown').value; const price = parseFloat(document.getElementById('item-price-input').value); const qty = parseInt(document.getElementById('item-qty-input').value); if (name && price > 0) { cart.push({ name, price, qty }); updateUI(); document.getElementById('item-search').value = ""; filterProducts(); document.getElementById('item-search').focus(); } }
+        function removeItem(i) { cart.splice(i, 1); updateUI(); }
+
+        function updateUI() {
+            const cartBody = document.getElementById('cart-body'); const receiptItems = document.getElementById('receipt-items');
+            cartBody.innerHTML = ""; receiptItems.innerHTML = ""; let subtotal = 0;
+            cart.forEach((item, index) => {
+                const total = item.price * item.qty; subtotal += total;
+                cartBody.innerHTML += `<tr class="p-4"><td>${item.name}</td><td>₹${item.price}</td><td>${item.qty}</td><td>₹${total}</td><td><button onclick="removeItem(${index})" class="text-red-500">×</button></td></tr>`;
+                receiptItems.innerHTML += `<div class="flex justify-between"><span>${item.name} x${item.qty}</span><span>₹${total}</span></div>`;
+            });
+            const grandTotal = subtotal * 1.18;
+            document.getElementById('p-subtotal').innerText = `₹${subtotal.toFixed(2)}`;
+            document.getElementById('p-grand').innerText = `₹${grandTotal.toFixed(2)}`;
+            document.getElementById('r-grand').innerText = `₹${grandTotal.toFixed(2)}`;
+            generateQR(grandTotal);
+        }
+
+        function generateQR(amount) {
+            const upiUrl = `upi://pay?pa=ayush@upi&pn=QuickkStore&am=${amount.toFixed(2)}&cu=INR`;
+            document.getElementById("qrcode").innerHTML = "";
+            document.getElementById("large-qrcode").innerHTML = "";
+            if(amount > 0) {
+                new QRCode(document.getElementById("qrcode"), { text: upiUrl, width: 80, height: 80 });
+                new QRCode(document.getElementById("large-qrcode"), { text: upiUrl, width: 250, height: 250 });
+            }
+        }
+
+        function openQRModal() { if(cart.length > 0) document.getElementById('qr-modal').style.display = 'flex'; }
+        function closeQRModal() { document.getElementById('qr-modal').style.display = 'none'; }
+
+        function printBill() {
+            if (cart.length === 0) return alert("Cart is empty!");
+            const history = JSON.parse(localStorage.getItem('quickk_history') || "[]");
+            history.unshift({ no: billNo, date: new Date().toLocaleDateString(), time: new Date().toLocaleTimeString(), amount: document.getElementById('p-grand').innerText });
+            localStorage.setItem('quickk_history', JSON.stringify(history.slice(0, 50)));
+            loadBillHistory();
+            window.print();
+        }
+
+        function downloadTextBill() {
+            if (cart.length === 0) return alert("Cart is empty!");
+            let text = `QUICKK GROCERY STORE\nBill No: ${billNo}\nDate: ${new Date().toLocaleString()}\n` + "=".repeat(40) + "\n";
+            text += `${"Item".padEnd(20)} ${"Rate".padEnd(8)} ${"Qty".padEnd(5)} ${"Total"}\n` + "-".repeat(40) + "\n";
+            cart.forEach(i => text += `${i.name.substring(0,19).padEnd(20)} ${i.price.toString().padEnd(8)} ${i.qty.toString().padEnd(5)} ₹${(i.price*i.qty).toFixed(2)}\n`);
+            text += "=".repeat(40) + `\nGRAND TOTAL: ${document.getElementById('p-grand').innerText}\n` + "=".repeat(40) + "\nThank you for shopping!\n© 2026 Ayush Saini All Rights Reserved";
+            const blob = new Blob([text], { type: 'text/plain' });
+            const link = document.createElement('a'); link.href = URL.createObjectURL(blob); link.download = `${billNo}_Bill.txt`; link.click();
+        }
+
+        function loadBillHistory() {
+            const history = JSON.parse(localStorage.getItem('quickk_history') || "[]");
+            const container = document.getElementById('bill-history');
+            if (history.length > 0) container.innerHTML = history.map(bill => `<div class="flex justify-between p-2 bg-gray-50 rounded"><span>#${bill.no} (${bill.time})</span><span class="font-bold">${bill.amount}</span></div>`).join('');
+        }
+        
+        function exportHistoryToCSV() {
+            const history = JSON.parse(localStorage.getItem('quickk_history') || "[]");
+            if(history.length === 0) return alert("No data!");
+            let csv = "Bill No,Date,Time,Amount\n";
+            history.forEach(b => csv += `${b.no},${b.date},${b.time},"${b.amount.replace('₹','')}"\n`);
+            const blob = new Blob([csv], { type: 'text/csv' });
+            const link = document.createElement('a'); link.href = URL.createObjectURL(blob); link.download = `Report_${new Date().toLocaleDateString()}.csv`; link.click();
+        }
+    </script>
+</body>
+</html>
