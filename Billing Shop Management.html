@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<link rel="icon" type="image/x-icon" href="C:\Users\Dell\Downloads\images (1).ico">
+<link rel="icon" type="image/x-icon" href="images (1).ico">
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Quickk | Smart Billing</title>
@@ -19,6 +19,24 @@
         #qr-modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); align-items: center; justify-content: center; }
         #qr-modal-content { background: white; padding: 20px; border-radius: 15px; text-align: center; }
 
+        /* Dark Mode */
+        body.dark { background: #111827; color: #f3f4f6; }
+        body.dark .bg-white { background: #1f2937 !important; }
+        body.dark .bg-gray-50 { background: #374151 !important; }
+        body.dark .bg-orange-50 { background: #292524 !important; }
+        body.dark .text-gray-800 { color: #f3f4f6 !important; }
+        body.dark .text-gray-700 { color: #e5e7eb !important; }
+        body.dark .text-gray-600 { color: #d1d5db !important; }
+        body.dark .text-gray-500 { color: #9ca3af !important; }
+        body.dark .text-gray-400 { color: #6b7280 !important; }
+        body.dark .border-gray-100 { border-color: #374151 !important; }
+        body.dark .border-gray-200 { border-color: #4b5563 !important; }
+        body.dark .divide-gray-100 > * { border-color: #374151 !important; }
+        body.dark input, body.dark select { background: #374151 !important; border-color: #4b5563 !important; color: #f3f4f6 !important; }
+        body.dark .bg-gray-800 { background: #030712 !important; }
+        body.dark #bill-history .bg-gray-50 { background: #374151 !important; }
+        body.dark .h-px { background: #374151 !important; }
+
         @media print {
             body * { visibility: hidden; }
             #print-receipt, #print-receipt * { visibility: visible; }
@@ -33,14 +51,15 @@
         <header class="flex flex-col md:flex-row justify-between items-center mb-6 bg-white p-6 rounded-2xl shadow-sm border-b-4 border-orange-500">
             <div class="flex items-center gap-4">
                 <div class="bg-orange-100 p-3 rounded-xl text-orange-600 text-2xl">
-                  <img src="C:\Users\Dell\Downloads\images (1).ico" width="90" height="90">
+                  <img src="images (1).ico" width="90" height="90">
                 </div>
                 <div>
                     <h1 class="text-2xl font-bold text-gray-800">Quickk Grocery Store</h1><BR>
                     <p class="text-gray-500 text-xs uppercase tracking-widest font-bold">Powered by UPI: <i class="fa-brands fa-google-pay fa-2xl"></i> | <i class="fa-brands fa-amazon-pay fa-2xl"></i></p>
                 </div>
             </div>
-            <div class="text-center md:text-right mt-4 md:mt-0">
+            <div class="text-center md:text-right mt-4 md:mt-0 flex flex-col items-end gap-2">
+                <button onclick="toggleDarkMode()" id="dark-toggle" class="bg-gray-800 text-white px-4 py-2 rounded-xl font-bold text-sm hover:bg-gray-900 transition flex items-center gap-2"><i class="fa-solid fa-moon" id="dark-icon"></i> <span id="dark-label">Dark Mode</span></button>
                 <p id="live-clock" class="font-bold text-gray-700 text-lg"></p>
                 <p id="bill-no-display" class="text-indigo-600 font-mono font-bold text-xl"></p>
             </div>
@@ -107,6 +126,7 @@
                     <div class="flex justify-between items-center mb-4">
                         <h3 class="font-bold text-gray-800 flex items-center gap-2"><i class="fa-solid fa-clock-rotate-left text-orange-500"></i> Recent Bills History</h3>
                         <button onclick="exportHistoryToCSV()" class="text-xs bg-green-100 text-green-600 px-3 py-1 rounded-lg font-bold hover:bg-green-200 transition"><i class="fa-solid fa-file-excel mr-1"></i> Export (CSV)</button>
+                        <button onclick="clearBillHistory()" class="text-xs bg-red-100 text-red-600 px-3 py-1 rounded-lg font-bold hover:bg-red-200 transition"><i class="fa-solid fa-trash mr-1"></i> Clear History</button>
                     </div>
                     <div id="bill-history" class="max-h-48 overflow-y-auto custom-scroll space-y-2 text-gray-400 text-sm italic">No previous bills yet.</div>
                 </div>
@@ -123,6 +143,12 @@
                     </div>
                     <button onclick="printBill()" class="w-full mt-6 bg-gray-800 text-white py-4 rounded-xl font-bold hover:bg-gray-900 transition flex items-center justify-center gap-2"><i class="fa-solid fa-receipt"></i> Save & Print Receipt</button>
                     <button onclick="downloadTextBill()" class="w-full mt-2 border-2 border-gray-200 text-gray-600 py-3 rounded-xl font-bold hover:bg-gray-50 transition">Download .TXT Bill</button>
+                </div>
+
+                <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
+                    <h3 class="font-bold text-gray-800 mb-4 flex items-center gap-2"><i class="fa-solid fa-chart-bar text-orange-500"></i> Bill Stats</h3>
+                    <canvas id="stats-chart" height="160"></canvas>
+                    <p id="stats-empty" class="text-gray-400 text-sm italic text-center mt-4 hidden">No data to display yet.</p>
                 </div>
 
                 <div id="print-receipt" class="bg-white p-6 rounded-2xl border-2 border-dashed border-gray-200">
@@ -142,11 +168,47 @@
 
     <footer class="no-print bg-gray-800 text-white py-4 mt-8 border-t-4 border-orange-500"><div class="max-w-6xl mx-auto text-center px-4"><p class="text-sm font-medium">Grocery shop management system made by <span class="text-orange-400 font-bold uppercase">Ayush Saini</span> | All rights reserved 2026</p></div></footer>
 
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
     <script>
-        let cart = []; let billNo = "";
+        let cart = []; let billNo = ""; let statsChart = null;
+
+        function toggleDarkMode() {
+            document.body.classList.toggle('dark');
+            const isDark = document.body.classList.contains('dark');
+            document.getElementById('dark-icon').className = isDark ? 'fa-solid fa-sun' : 'fa-solid fa-moon';
+            document.getElementById('dark-label').innerText = isDark ? 'Light Mode' : 'Dark Mode';
+            if (statsChart) { renderStatsChart(); }
+        }
+
+        function clearBillHistory() {
+            if (!confirm('Clear all bill history? This cannot be undone.')) return;
+            localStorage.removeItem('quickk_history');
+            loadBillHistory();
+            renderStatsChart();
+        }
+
+        function renderStatsChart() {
+            const history = JSON.parse(localStorage.getItem('quickk_history') || "[]");
+            const canvas = document.getElementById('stats-chart');
+            const empty = document.getElementById('stats-empty');
+            if (history.length === 0) { canvas.style.display = 'none'; empty.classList.remove('hidden'); if (statsChart) { statsChart.destroy(); statsChart = null; } return; }
+            canvas.style.display = ''; empty.classList.add('hidden');
+            const recent = history.slice(0, 10).reverse();
+            const labels = recent.map(b => `#${b.no}`);
+            const amounts = recent.map(b => parseFloat(b.amount.replace('₹','')) || 0);
+            const isDark = document.body.classList.contains('dark');
+            const gridColor = isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)';
+            const labelColor = isDark ? '#9ca3af' : '#6b7280';
+            if (statsChart) statsChart.destroy();
+            statsChart = new Chart(canvas, {
+                type: 'bar',
+                data: { labels, datasets: [{ label: 'Bill Amount (₹)', data: amounts, backgroundColor: 'rgba(249,115,22,0.7)', borderColor: '#f97316', borderWidth: 2, borderRadius: 6 }] },
+                options: { responsive: true, plugins: { legend: { display: false } }, scales: { x: { ticks: { color: labelColor, font: { size: 10 } }, grid: { color: gridColor } }, y: { ticks: { color: labelColor, font: { size: 10 }, callback: v => '₹'+v }, grid: { color: gridColor }, beginAtZero: true } } }
+            });
+        }
         const allOptions = Array.from(document.querySelectorAll('#product-dropdown option')).slice(1);
 
-        function initSystem() { updateClock(); setInterval(updateClock, 1000); generateBillNumber(); loadBillHistory(); document.getElementById('item-search').focus(); }
+        function initSystem() { updateClock(); setInterval(updateClock, 1000); generateBillNumber(); loadBillHistory(); renderStatsChart(); document.getElementById('item-search').focus(); }
         function updateClock() { const now = new Date(); document.getElementById('live-clock').innerText = now.toLocaleString('en-IN', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit' }); }
         function generateBillNumber() { let count = localStorage.getItem('quickk_bill_count') || 0; count = parseInt(count) + 1; localStorage.setItem('quickk_bill_count', count); billNo = `BK-${count.toString().padStart(3, '0')}`; document.getElementById('bill-no-display').innerText = `BILL: #${billNo}`; document.getElementById('receipt-bill-no').innerText = `Bill No: ${billNo}`; }
         function filterProducts() { const searchTerm = document.getElementById('item-search').value.toLowerCase(); const dropdown = document.getElementById('product-dropdown'); dropdown.innerHTML = '<option value="">-- Items Found --</option>'; const filtered = allOptions.filter(opt => opt.value.toLowerCase().includes(searchTerm)); filtered.forEach(opt => dropdown.add(opt.cloneNode(true))); if (filtered.length === 1) { dropdown.selectedIndex = 1; autoFillFromDropdown(); } }
@@ -188,6 +250,7 @@
             history.unshift({ no: billNo, date: new Date().toLocaleDateString(), time: new Date().toLocaleTimeString(), amount: document.getElementById('p-grand').innerText });
             localStorage.setItem('quickk_history', JSON.stringify(history.slice(0, 50)));
             loadBillHistory();
+            renderStatsChart();
             window.print();
         }
 
